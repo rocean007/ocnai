@@ -1,0 +1,10 @@
+# netlify.toml
+# Netlify configuration for veggie-website
+
+[build]
+  publish = "."
+
+[[redirects]]
+  from = "/*"
+  to   = "/index.html"
+  status = 200

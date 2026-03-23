@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vegetables — VeggieWorld</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <nav class="navbar">
+    <a class="nav-brand" href="index.html">🌿 VeggieWorld</a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="vegetables.html" class="active">Vegetables</a>
+      <a href="chatbot.html">Ask AI 🤖</a>
+    </div>
+  </nav>
+
+  <div class="page-header">
+    <div class="container">
+      <h1>🥦 Vegetable Directory</h1>
+      <p>Click any vegetable to ask VeggieBot about it</p>
+      <input type="text" id="search" placeholder="Search vegetables..." oninput="filterVegs()" class="search-input">
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="filter-row">
+      <button class="filter-btn active" onclick="filterByTag('all', this)">All</button>
+      <button class="filter-btn" onclick="filterByTag('leafy', this)">🥬 Leafy</button>
+      <button class="filter-btn" onclick="filterByTag('root', this)">🥕 Root</button>
+      <button class="filter-btn" onclick="filterByTag('fruit', this)">🍅 Fruit</button>
+      <button class="filter-btn" onclick="filterByTag('brassica', this)">🥦 Brassica</button>
+      <button class="filter-btn" onclick="filterByTag('allium', this)">🧅 Allium</button>
+    </div>
+
+    <div class="veg-grid" id="vegGrid"></div>
+  </div>
+
+  <!-- Floating chatbot bubble -->
+  <div id="chat-bubble" onclick="toggleChat()" title="Ask VeggieBot">🥦</div>
+  <iframe id="chat-frame" src="chatbot.html" title="VeggieBot"></iframe>
+
+  <footer class="footer">
+    <div class="container">
+      <p>🌿 VeggieWorld — Built with a custom fine-tuned AI model</p>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+  <script>
+    const vegetables = [
+      { name: "Tomato",       emoji: "🍅", tags: ["fruit"],    desc: "Warm season fruit vegetable, rich in lycopene" },
+      { name: "Spinach",      emoji: "🌿", tags: ["leafy"],    desc: "Cool season green, very high in Vitamin K" },
+      { name: "Carrot",       emoji: "🥕", tags: ["root"],     desc: "Root vegetable, rich in beta-carotene" },
+      { name: "Broccoli",     emoji: "🥦", tags: ["brassica"], desc: "High in Vitamin C and cancer-fighting compounds" },
+      { name: "Potato",       emoji: "🥔", tags: ["root"],     desc: "Starchy tuber, good source of potassium and B6" },
+      { name: "Onion",        emoji: "🧅", tags: ["allium"],   desc: "Pungent allium with antibacterial properties" },
+      { name: "Garlic",       emoji: "🧄", tags: ["allium"],   desc: "Powerful medicinal and culinary allium" },
+      { name: "Cabbage",      emoji: "🥬", tags: ["brassica"], desc: "Cool season crop, rich in Vitamin C and K" },
+      { name: "Cauliflower",  emoji: "🥦", tags: ["brassica"], desc: "Versatile brassica, high in Vitamin C" },
+      { name: "Lettuce",      emoji: "🥗", tags: ["leafy"],    desc: "Cool season salad green, many varieties" },
+      { name: "Cucumber",     emoji: "🥒", tags: ["fruit"],    desc: "Warm season, 95% water, refreshing" },
+      { name: "Kale",         emoji: "🌿", tags: ["brassica", "leafy"], desc: "Superfood leafy green, very high in vitamins K, A, C" },
+      { name: "Sweet Potato", emoji: "🍠", tags: ["root"],     desc: "Nutrient-dense root, very high in Vitamin A" },
+      { name: "Beetroot",     emoji: "🫀", tags: ["root"],     desc: "Root vegetable, high in folate and nitrates" },
+      { name: "Asparagus",    emoji: "🌱", tags: ["other"],    desc: "Perennial vegetable, rich in folate" },
+      { name: "Celery",       emoji: "🌿", tags: ["other"],    desc: "Very low calorie, good source of Vitamin K" },
+      { name: "Peas",         emoji: "🫛", tags: ["other"],    desc: "Legume-vegetable, good protein source" },
+      { name: "Corn",         emoji: "🌽", tags: ["fruit"],    desc: "Summer staple, contains lutein and zeaxanthin" },
+      { name: "Eggplant",     emoji: "🍆", tags: ["fruit"],    desc: "Warm season, high in anthocyanins" },
+      { name: "Zucchini",     emoji: "🥒", tags: ["fruit"],    desc: "Summer squash, very low calorie" },
+      { name: "Pumpkin",      emoji: "🎃", tags: ["fruit"],    desc: "High in Vitamin A, great for soups" },
+      { name: "Radish",       emoji: "🌶️", tags: ["root"],    desc: "Fast-growing root, peppery flavour" },
+      { name: "Leek",         emoji: "🌿", tags: ["allium"],   desc: "Mild allium, good source of Vitamin K" },
+      { name: "Okra",         emoji: "🌱", tags: ["fruit"],    desc: "Tropical vegetable, high in Vitamin C and fiber" },
+      { name: "Chard",        emoji: "🌿", tags: ["leafy"],    desc: "Colourful leafy green, very high in Vitamin K" },
+      { name: "Fennel",       emoji: "🌿", tags: ["other"],    desc: "Anise-flavoured bulb, good for digestion" },
+      { name: "Arugula",      emoji: "🌿", tags: ["leafy"],    desc: "Peppery salad green, rich in calcium" },
+      { name: "Parsnip",      emoji: "🥕", tags: ["root"],     desc: "Sweet root vegetable, good source of folate" },
+      { name: "Turnip",       emoji: "🥕", tags: ["root"],     desc: "Cool season root, both leaves and root are edible" },
+      { name: "Kohlrabi",     emoji: "🥦", tags: ["brassica"], desc: "Crisp brassica bulb, mild sweet flavour" },
+      { name: "Bok Choy",     emoji: "🥬", tags: ["brassica", "leafy"], desc: "Chinese cabbage, rich in Vitamin C" },
+      { name: "Watercress",   emoji: "🌿", tags: ["leafy"],    desc: "Aquatic green, extremely nutrient dense" },
+      { name: "Endive",       emoji: "🥗", tags: ["leafy"],    desc: "Bitter leafy green, good for digestion" },
+      { name: "Artichoke",    emoji: "🌸", tags: ["other"],    desc: "Edible thistle flower, high in antioxidants" },
+    ];
+
+    let currentTag = "all";
+    let searchTerm = "";
+
+    function renderGrid() {
+      const grid = document.getElementById("vegGrid");
+      const filtered = vegetables.filter(v => {
+        const matchTag    = currentTag === "all" || v.tags.includes(currentTag);
+        const matchSearch = v.name.toLowerCase().includes(searchTerm.toLowerCase());
+        return matchTag && matchSearch;
+      });
+
+      if (filtered.length === 0) {
+        grid.innerHTML = '<p style="color:#6b7280;grid-column:1/-1;text-align:center;padding:40px">No vegetables found.</p>';
+        return;
+      }
+
+      grid.innerHTML = filtered.map(v => `
+        <a href="chatbot.html?q=Tell+me+about+${encodeURIComponent(v.name)}+nutrition+and+growing" class="veg-card">
+          <div class="veg-emoji">${v.emoji}</div>
+          <div class="veg-name">${v.name}</div>
+          <div class="veg-desc">${v.desc}</div>
+          <div class="veg-tags">
+            ${v.tags.map(t => `<span class="veg-tag">${t}</span>`).join("")}
+          </div>
+        </a>
+      `).join("");
+    }
+
+    function filterByTag(tag, btn) {
+      currentTag = tag;
+      document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      renderGrid();
+    }
+
+    function filterVegs() {
+      searchTerm = document.getElementById("search").value;
+      renderGrid();
+    }
+
+    renderGrid();
+  </script>
+</body>
+</html>
