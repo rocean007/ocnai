@@ -1,6 +1,0 @@
-{
-  "name": "veggie-ai-backend",
-  "version": "1.0.0",
-  "private": true,
-  "description": "VeggieBot backend API — proxies requests to Hugging Face model"
-}
