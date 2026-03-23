@@ -1,0 +1,26 @@
+{
+  "version": 2,
+  "outputDirectory": "public",
+  "functions": {
+    "api/chat.js": { "maxDuration": 60 }
+  },
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/api/$1" },
+    { "src": "/chat",     "dest": "/public/chat.html" },
+    { "src": "/vegetables","dest": "/public/vegetables.html" },
+    { "src": "/(.*)\\.html", "dest": "/public/$1.html" },
+    { "src": "/css/(.*)", "dest": "/public/css/$1" },
+    { "src": "/js/(.*)",  "dest": "/public/js/$1" },
+    { "src": "/",         "dest": "/public/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin",  "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "POST, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ask SagjiBot — Vegetable AI</title>
+  <meta name="description"
+        content="Chat with SagjiBot — ask anything about vegetable nutrition, growing, chemicals, and plant diseases in English or Nepali.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sagjibot.vercel.app/chat.html">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/chat.css">
+</head>
+<body class="is-chat">
+
+<div class="chat-shell">
+
+  <!-- Header -->
+  <header class="chat-head">
+    <a href="/" class="chat-back" aria-label="Back to home">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+    </a>
+    <div class="chat-head-info">
+      <strong>🌿 SagjiBot</strong>
+      <span class="chat-status">
+        <span class="dot" id="dot"></span>
+        <span id="statusLabel">Ready</span>
+      </span>
+    </div>
+    <a href="/" class="chat-home-link">Home</a>
+  </header>
+
+  <!-- Suggestions -->
+  <nav class="sugs" aria-label="Suggested questions">
+    <button class="sug" onclick="ask('What vitamins does spinach have?')">🌿 Spinach vitamins</button>
+    <button class="sug" onclick="ask('How do I grow tomatoes from seed?')">🍅 Grow tomatoes</button>
+    <button class="sug" onclick="ask('How do I treat early blight?')">🦠 Early blight</button>
+    <button class="sug" onclick="ask('What is neem oil?')">🧪 Neem oil</button>
+    <button class="sug" onclick="ask('पालकमा कुन भिटामिन हुन्छ?')">🇳🇵 नेपाली</button>
+    <button class="sug" onclick="ask('How do I control aphids organically?')">🐛 Aphids</button>
+  </nav>
+
+  <!-- Messages -->
+  <main class="msgs" id="msgs" role="log" aria-live="polite" aria-label="Chat messages">
+    <div class="msg bot">
+      <div class="bubble">
+        Hi! I'm SagjiBot 🌿 — your vegetable expert.<br><br>
+        Ask me anything about <strong>nutrition</strong>, <strong>growing</strong>,
+        <strong>chemicals</strong>, or <strong>plant diseases</strong>.<br><br>
+        म नेपालीमा पनि उत्तर दिन सक्छु।
+      </div>
+    </div>
+  </main>
+
+  <!-- Input -->
+  <div class="chat-bar">
+    <label for="inp" class="sr-only">Your message</label>
+    <input
+      id="inp"
+      type="text"
+      class="chat-inp"
+      placeholder="Ask about vegetables… / तरकारीबारे सोध्नुस्…"
+      maxlength="400"
+      autocomplete="off"
+      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();send();}"
+    >
+    <button class="chat-send" id="sendBtn" onclick="send()" aria-label="Send message">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+        <line x1="22" y1="2" x2="11" y2="13"/>
+        <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+      </svg>
+    </button>
+  </div>
+
+</div>
+
+<script>
+  // ── Replace with your actual Vercel backend URL after deploying ──
+  const API = "/api/chat";
+
+  const msgsEl  = document.getElementById("msgs");
+  const inp     = document.getElementById("inp");
+  const sendBtn = document.getElementById("sendBtn");
+  const dot     = document.getElementById("dot");
+  const label   = document.getElementById("statusLabel");
+
+  const STATUS = {
+    idle:    { cls: "idle",    text: "Ready" },
+    loading: { cls: "loading", text: "Thinking…" },
+    error:   { cls: "error",   text: "Error" },
+  };
+
+  function setStatus(s) {
+    dot.className   = "dot " + STATUS[s].cls;
+    label.textContent = STATUS[s].text;
+  }
+
+  function addMsg(html, cls) {
+    const wrap   = document.createElement("div");
+    wrap.className = `msg ${cls}`;
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
+    bubble.innerHTML = html;
+    wrap.appendChild(bubble);
+    msgsEl.appendChild(wrap);
+    wrap.scrollIntoView({ behavior: "smooth", block: "end" });
+    return bubble;
+  }
+
+  function addTyping() {
+    const wrap   = document.createElement("div");
+    wrap.className = "msg bot";
+    wrap.id      = "typing";
+    wrap.innerHTML = `<div class="bubble"><span class="dots"><i></i><i></i><i></i></span></div>`;
+    msgsEl.appendChild(wrap);
+    wrap.scrollIntoView({ behavior: "smooth", block: "end" });
+  }
+
+  function esc(s) {
+    return s
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+
+  async function send() {
+    const text = inp.value.trim();
+    if (!text || sendBtn.disabled) return;
+
+    addMsg(esc(text), "user");
+    inp.value = "";
+    sendBtn.disabled = true;
+    setStatus("loading");
+    addTyping();
+
+    try {
+      const res  = await fetch(API, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ message: text }),
+      });
+      const data = await res.json();
+
+      document.getElementById("typing")?.remove();
+
+      if (res.status === 503) {
+        const s = data.retry_after ?? 30;
+        addMsg(`⏳ Model is warming up (~${s}s on first use). Please send your message again.`, "err");
+      } else if (!res.ok || data.error) {
+        addMsg("❌ " + (data.error ?? "Something went wrong. Please try again."), "err");
+      } else {
+        addMsg(esc(data.reply).replace(/\n/g, "<br>"), "bot");
+      }
+
+      setStatus("idle");
+
+    } catch (e) {
+      document.getElementById("typing")?.remove();
+      addMsg("❌ Network error. Check your connection and try again.", "err");
+      setStatus("error");
+    }
+
+    sendBtn.disabled = false;
+    inp.focus();
+  }
+
+  function ask(q) { inp.value = q; send(); }
+
+  // Pre-fill from URL ?q= parameter (used by homepage chips)
+  const preset = new URLSearchParams(location.search).get("q");
+  if (preset) { inp.value = preset; setTimeout(send, 350); }
+
+  inp.focus();
+  setStatus("idle");
+</script>
+</body>
+</html>

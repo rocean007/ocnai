@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vegetable Directory — SagjiBot</title>
+  <meta name="description"
+        content="Browse vegetables and ask SagjiBot about nutrition, growing tips, diseases, and more. Includes Nepali names (नेपाली नाम).">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sagjibot.vercel.app/vegetables.html">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <header class="header">
+    <nav class="nav">
+      <a class="nav-brand" href="/">🌿 SagjiBot</a>
+      <div class="nav-links" id="navLinks">
+        <a href="/">Home</a>
+        <a href="/vegetables.html" aria-current="page">Vegetables</a>
+        <a href="/chat.html" class="nav-cta">Ask AI</a>
+      </div>
+      <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+      </button>
+    </nav>
+  </header>
+
+  <main>
+    <div class="page-top">
+      <div class="wrap">
+        <h1>Vegetable Directory</h1>
+        <p>Click any vegetable to ask SagjiBot about it</p>
+        <input
+          id="search"
+          type="search"
+          class="veg-search"
+          placeholder="Search by name or नेपाली…"
+          oninput="render()"
+          aria-label="Search vegetables"
+        >
+      </div>
+    </div>
+
+    <div class="wrap">
+      <div class="filters" role="group" aria-label="Filter by type">
+        <button class="filter on" data-t="all"      onclick="tag('all',this)">All</button>
+        <button class="filter"    data-t="leafy"    onclick="tag('leafy',this)">🥬 Leafy</button>
+        <button class="filter"    data-t="root"     onclick="tag('root',this)">🥕 Root</button>
+        <button class="filter"    data-t="fruit"    onclick="tag('fruit',this)">🍅 Fruit</button>
+        <button class="filter"    data-t="brassica" onclick="tag('brassica',this)">🥦 Brassica</button>
+        <button class="filter"    data-t="allium"   onclick="tag('allium',this)">🧅 Allium</button>
+      </div>
+
+      <div class="veg-grid" id="grid" role="list"></div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer-inner">
+      <span>🌿 SagjiBot</span>
+      <span>Vegetable Expert AI · English &amp; नेपाली</span>
+    </div>
+  </footer>
+
+  <script src="/js/main.js"></script>
+  <script>
+    const VEGS = [
+      { n:"Tomato",        e:"🍅", t:["fruit"],            ne:"गोलभेडा",   d:"Warm season, rich in lycopene and Vitamin C" },
+      { n:"Spinach",       e:"🌿", t:["leafy"],             ne:"पालक",      d:"Very high in Vitamin K, iron, and folate" },
+      { n:"Carrot",        e:"🥕", t:["root"],              ne:"गाजर",      d:"Best source of beta-carotene (Vitamin A)" },
+      { n:"Broccoli",      e:"🥦", t:["brassica"],          ne:"ब्रोकोली",  d:"High in Vitamin C and cancer-fighting sulforaphane" },
+      { n:"Potato",        e:"🥔", t:["root"],              ne:"आलु",       d:"Good source of potassium and Vitamin B6" },
+      { n:"Onion",         e:"🧅", t:["allium"],            ne:"प्याज",     d:"Contains quercetin with anti-inflammatory effects" },
+      { n:"Garlic",        e:"🧄", t:["allium"],            ne:"लसुन",      d:"Allicin is antibacterial, antiviral, cardioprotective" },
+      { n:"Cabbage",       e:"🥬", t:["brassica","leafy"],  ne:"बन्दा",     d:"High in Vitamin C and K, low calorie" },
+      { n:"Cauliflower",   e:"🥦", t:["brassica"],          ne:"काउली",     d:"Versatile brassica, excellent Vitamin C source" },
+      { n:"Lettuce",       e:"🥗", t:["leafy"],             ne:"सलाद",      d:"Hydrating, very low calorie, many varieties" },
+      { n:"Cucumber",      e:"🥒", t:["fruit"],             ne:"काँक्रो",   d:"95% water, refreshing and hydrating" },
+      { n:"Kale",          e:"🌿", t:["brassica","leafy"],  ne:"काले",      d:"Superfood — Vitamins K, A, C, calcium, iron" },
+      { n:"Sweet Potato",  e:"🍠", t:["root"],              ne:"मिठो आलु",  d:"Very high in Vitamin A (beta-carotene)" },
+      { n:"Beetroot",      e:"🔴", t:["root"],              ne:"चुकन्दर",   d:"High in folate, nitrates, and antioxidants" },
+      { n:"Bitter Gourd",  e:"🫛", t:["fruit"],             ne:"करेला",     d:"Lowers blood sugar, used in Ayurvedic medicine" },
+      { n:"Asparagus",     e:"🌱", t:["other"],             ne:"अस्पारेगस", d:"Rich in folate and Vitamins K and C" },
+      { n:"Peas",          e:"🫛", t:["other"],             ne:"केराउ",     d:"Good plant protein, Vitamins K and C" },
+      { n:"Eggplant",      e:"🍆", t:["fruit"],             ne:"भन्टा",     d:"Contains nasunin antioxidant in purple skin" },
+      { n:"Zucchini",      e:"🥒", t:["fruit"],             ne:"जुकिनी",    d:"Very low calorie, good source of Vitamin C" },
+      { n:"Pumpkin",       e:"🎃", t:["fruit"],             ne:"फर्सी",     d:"Very high in beta-carotene, great for soups" },
+      { n:"Radish",        e:"🌶️",t:["root"],              ne:"मुला",      d:"Fast growing, peppery, good source of Vitamin C" },
+      { n:"Leek",          e:"🌿", t:["allium"],            ne:"लिक",       d:"Mild flavour, rich in Vitamin K and folate" },
+      { n:"Okra",          e:"🌱", t:["fruit"],             ne:"भिन्डी",    d:"High in Vitamin C and soluble fiber" },
+      { n:"Chard",         e:"🌿", t:["leafy"],             ne:"चार्ड",     d:"Colourful stalks, very high in Vitamins K and A" },
+      { n:"Coriander",     e:"🌿", t:["leafy"],             ne:"धनिया",     d:"Common Nepali herb, rich in Vitamins K and C" },
+      { n:"Fenugreek",     e:"🌿", t:["leafy"],             ne:"मेथी",      d:"High in iron and protein, common in Nepali cooking" },
+      { n:"Celery",        e:"🌿", t:["other"],             ne:"सेलेरी",    d:"Very low calorie, good source of Vitamin K" },
+      { n:"Capsicum",      e:"🫑", t:["fruit"],             ne:"क्याप्सिकम",d:"Very high in Vitamin C — more than oranges" },
+      { n:"Mustard Greens",e:"🌿", t:["leafy","brassica"],  ne:"रायो साग",  d:"Pungent leafy green, high in Vitamins K and A" },
+    ];
+
+    let currentTag  = "all";
+
+    function tag(t, btn) {
+      currentTag = t;
+      document.querySelectorAll(".filter").forEach(b => b.classList.remove("on"));
+      btn.classList.add("on");
+      render();
+    }
+
+    function render() {
+      const q = (document.getElementById("search").value || "").toLowerCase();
+      const filtered = VEGS.filter(v =>
+        (currentTag === "all" || v.t.includes(currentTag)) &&
+        (v.n.toLowerCase().includes(q) || v.ne.includes(q))
+      );
+
+      const grid = document.getElementById("grid");
+
+      if (!filtered.length) {
+        grid.innerHTML = `<p class="no-results">No vegetables found.</p>`;
+        return;
+      }
+
+      grid.innerHTML = filtered.map(v => `
+        <a
+          href="/chat.html?q=${encodeURIComponent('Tell me about ' + v.n + ' — nutrition and growing tips')}"
+          class="vcard"
+          role="listitem"
+          aria-label="${v.n} — ${v.ne}"
+        >
+          <span class="vcard-emoji">${v.e}</span>
+          <strong class="vcard-name">${v.n}</strong>
+          <span class="vcard-ne">${v.ne}</span>
+          <p class="vcard-desc">${v.d}</p>
+        </a>
+      `).join("");
+    }
+
+    render();
+  </script>
+</body>
+</html>
