@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SagjiBot</title>
+  <meta name="description" content="SagjiBot — Vegetable expert AI. Nutrition, growing, chemicals, and food safety.">
+  <style>
+    /* ── Reset & Base ───────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", sans-serif;
+      background: #f9f6f1;
+      color: #1a1a1a;
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+      overflow: hidden;
+    }
+
+    /* ── Layout ─────────────────────────────────────────────── */
+    .shell {
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+      max-width: 780px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* ── Header ─────────────────────────────────────────────── */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 14px 20px;
+      border-bottom: 1px solid #e8e2d8;
+      background: #f9f6f1;
+      flex-shrink: 0;
+      position: relative;
+    }
+
+    .topbar__title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #1a1a1a;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .topbar__dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #ccc;
+      transition: background 0.3s;
+    }
+    .topbar__dot.online  { background: #52b788; }
+    .topbar__dot.loading { background: #f0c07a; animation: pulse 1s infinite; }
+
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+    /* ── Messages ───────────────────────────────────────────── */
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 28px 20px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      scroll-behavior: smooth;
+    }
+
+    .messages::-webkit-scrollbar { width: 5px; }
+    .messages::-webkit-scrollbar-track { background: transparent; }
+    .messages::-webkit-scrollbar-thumb { background: #d9d2c8; border-radius: 10px; }
+
+    /* Empty state */
+    .empty-state {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 40px 20px;
+      text-align: center;
+      color: #8a8070;
+    }
+
+    .empty-state__icon { font-size: 3rem; margin-bottom: 4px; }
+    .empty-state__title { font-size: 1.25rem; font-weight: 600; color: #3d3730; }
+    .empty-state__sub { font-size: 0.875rem; line-height: 1.6; max-width: 320px; }
+
+    .starters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 16px;
+      max-width: 480px;
+    }
+
+    .starter {
+      background: #fff;
+      border: 1px solid #e0d9ce;
+      color: #3d3730;
+      padding: 8px 14px;
+      border-radius: 100px;
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      font-family: inherit;
+    }
+    .starter:hover { background: #f0ece5; border-color: #c8bfb0; }
+
+    /* Message rows */
+    .msg-row {
+      display: flex;
+      gap: 10px;
+      animation: fadeIn 0.2s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+    .msg-row--user  { justify-content: flex-end; }
+    .msg-row--bot   { justify-content: flex-start; }
+    .msg-row--error { justify-content: flex-start; }
+
+    .msg-avatar {
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.85rem;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .msg-avatar--bot   { background: #2d6a4f; color: #fff; }
+    .msg-avatar--error { background: #e05252; color: #fff; font-size: 0.75rem; }
+
+    .msg-bubble {
+      max-width: min(72%, 560px);
+      padding: 11px 15px;
+      border-radius: 18px;
+      font-size: 0.925rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .msg-row--user  .msg-bubble {
+      background: #2d6a4f;
+      color: #fff;
+      border-bottom-right-radius: 5px;
+    }
+    .msg-row--bot   .msg-bubble {
+      background: #fff;
+      color: #1a1a1a;
+      border: 1px solid #e8e2d8;
+      border-bottom-left-radius: 5px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    }
+    .msg-row--error .msg-bubble {
+      background: #fef2f2;
+      color: #b91c1c;
+      border: 1px solid #fecaca;
+      border-bottom-left-radius: 5px;
+      font-size: 0.875rem;
+    }
+
+    /* Typing dots */
+    .typing-bubble {
+      background: #fff;
+      border: 1px solid #e8e2d8;
+      border-radius: 18px;
+      border-bottom-left-radius: 5px;
+      padding: 13px 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    }
+    .dots { display: flex; gap: 4px; align-items: center; }
+    .dots span {
+      width: 7px; height: 7px;
+      background: #52b788;
+      border-radius: 50%;
+      animation: dotBounce 1.2s ease-in-out infinite;
+    }
+    .dots span:nth-child(2) { animation-delay: 0.15s; }
+    .dots span:nth-child(3) { animation-delay: 0.30s; }
+    @keyframes dotBounce {
+      0%,60%,100% { transform: translateY(0); }
+      30%          { transform: translateY(-7px); }
+    }
+
+    /* ── Input area ─────────────────────────────────────────── */
+    .input-area {
+      padding: 14px 16px 20px;
+      background: #f9f6f1;
+      flex-shrink: 0;
+    }
+
+    .input-wrap {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      background: #fff;
+      border: 1.5px solid #e0d9ce;
+      border-radius: 16px;
+      padding: 10px 10px 10px 16px;
+      transition: border-color 0.2s;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+    }
+    .input-wrap:focus-within { border-color: #52b788; }
+
+    #msgInput {
+      flex: 1;
+      border: none;
+      outline: none;
+      background: transparent;
+      font-family: inherit;
+      font-size: 0.935rem;
+      color: #1a1a1a;
+      resize: none;
+      max-height: 160px;
+      line-height: 1.55;
+      overflow-y: auto;
+    }
+    #msgInput::placeholder { color: #a89e8f; }
+
+    #sendBtn {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      background: #2d6a4f;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.15s, transform 0.1s;
+    }
+    #sendBtn:hover   { background: #1b4332; }
+    #sendBtn:active  { transform: scale(0.93); }
+    #sendBtn:disabled { background: #d9d2c8; cursor: not-allowed; }
+    #sendBtn svg { width: 16px; height: 16px; }
+
+    .input-hint {
+      text-align: center;
+      font-size: 0.73rem;
+      color: #b0a898;
+      margin-top: 8px;
+    }
+
+    /* ── Responsive ─────────────────────────────────────────── */
+    @media (max-width: 520px) {
+      .msg-bubble       { max-width: 88%; font-size: 0.9rem; }
+      .messages         { padding: 20px 14px 8px; gap: 16px; }
+      .input-area       { padding: 10px 12px 16px; }
+      .empty-state__sub { font-size: 0.82rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- Header -->
+  <div class="topbar">
+    <span class="topbar__title">
+      <span class="topbar__dot" id="statusDot"></span>
+      SagjiBot
+    </span>
+  </div>
+
+  <!-- Messages -->
+  <div class="messages" id="messages">
+    <div class="empty-state" id="emptyState">
+      <div class="empty-state__icon">🌿</div>
+      <div class="empty-state__title">SagjiBot</div>
+      <div class="empty-state__sub">
+        Ask anything about vegetables — nutrition, growing, chemicals, or food safety.<br>
+        Works in English. Type in Nepali or ask "in Nepali" for Nepali replies.
+      </div>
+      <div class="starters">
+        <button class="starter" onclick="prefill('What vitamins does spinach have?')">Spinach vitamins</button>
+        <button class="starter" onclick="prefill('How do I grow tomatoes in Nepal?')">Grow tomatoes</button>
+        <button class="starter" onclick="prefill('How do I wash vegetables to remove pesticides?')">Remove pesticides</button>
+        <button class="starter" onclick="prefill('Is green potato safe to eat?')">Green potato</button>
+        <button class="starter" onclick="prefill('पालकमा कुन भिटामिन हुन्छ?')">नेपाली सोध्नुस्</button>
+        <button class="starter" onclick="prefill('What fertilizers are used on vegetables in Nepal?')">Fertilizers Nepal</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Input -->
+  <div class="input-area">
+    <div class="input-wrap">
+      <textarea
+        id="msgInput"
+        placeholder="Ask about vegetables…"
+        rows="1"
+        maxlength="600"
+        onkeydown="handleKey(event)"
+        oninput="autoResize(this)"
+      ></textarea>
+      <button id="sendBtn" onclick="send()" aria-label="Send message">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"/>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+      </button>
+    </div>
+    <p class="input-hint">Enter to send · Shift+Enter for new line</p>
+  </div>
+
+</div>
+
+<script>
+  // ── Config ─────────────────────────────────────────────────────
+  // Same Vercel project — API is on the same domain, no full URL needed
+  const API = "/api/chat";
+
+  // ── State ──────────────────────────────────────────────────────
+  let isLoading = false;
+
+  // ── DOM refs ───────────────────────────────────────────────────
+  const messagesEl = document.getElementById("messages");
+  const inputEl    = document.getElementById("msgInput");
+  const sendBtn    = document.getElementById("sendBtn");
+  const statusDot  = document.getElementById("statusDot");
+  const emptyState = document.getElementById("emptyState");
+
+  // ── Status dot ─────────────────────────────────────────────────
+  function setStatus(s) {
+    statusDot.className = "topbar__dot " + s;
+  }
+
+  // ── Auto-resize textarea ───────────────────────────────────────
+  function autoResize(el) {
+    el.style.height = "auto";
+    el.style.height = Math.min(el.scrollHeight, 160) + "px";
+  }
+
+  // ── Keyboard handler ───────────────────────────────────────────
+  function handleKey(e) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      send();
+    }
+  }
+
+  // ── Prefill from starter chips ─────────────────────────────────
+  function prefill(text) {
+    inputEl.value = text;
+    autoResize(inputEl);
+    inputEl.focus();
+  }
+
+  // ── Escape HTML ────────────────────────────────────────────────
+  function esc(str) {
+    return str
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  // ── Add message to UI ──────────────────────────────────────────
+  function addMsg(text, type) {
+    hideEmpty();
+
+    const row    = document.createElement("div");
+    row.className = `msg-row msg-row--${type}`;
+
+    if (type === "bot" || type === "error") {
+      const avatar    = document.createElement("div");
+      avatar.className = `msg-avatar msg-avatar--${type}`;
+      avatar.textContent = type === "bot" ? "🌿" : "!";
+      row.appendChild(avatar);
+    }
+
+    const bubble    = document.createElement("div");
+    bubble.className = "msg-bubble";
+    bubble.innerHTML = esc(text).replace(/\n/g, "<br>");
+    row.appendChild(bubble);
+
+    messagesEl.appendChild(row);
+    row.scrollIntoView({ behavior: "smooth", block: "end" });
+    return bubble;
+  }
+
+  // ── Typing indicator ───────────────────────────────────────────
+  function showTyping() {
+    hideEmpty();
+    const row    = document.createElement("div");
+    row.id       = "typing";
+    row.className = "msg-row msg-row--bot";
+
+    const avatar    = document.createElement("div");
+    avatar.className = "msg-avatar msg-avatar--bot";
+    avatar.textContent = "🌿";
+    row.appendChild(avatar);
+
+    const bubble = document.createElement("div");
+    bubble.className = "typing-bubble";
+    bubble.innerHTML = '<div class="dots"><span></span><span></span><span></span></div>';
+    row.appendChild(bubble);
+
+    messagesEl.appendChild(row);
+    row.scrollIntoView({ behavior: "smooth", block: "end" });
+  }
+
+  function removeTyping() {
+    document.getElementById("typing")?.remove();
+  }
+
+  // ── Hide empty state ───────────────────────────────────────────
+  function hideEmpty() {
+    if (emptyState) {
+      emptyState.style.display = "none";
+    }
+  }
+
+  // ── Main send function ─────────────────────────────────────────
+  async function send() {
+    const text = inputEl.value.trim();
+    if (!text || isLoading) return;
+
+    // Lock UI
+    isLoading        = true;
+    sendBtn.disabled = true;
+    inputEl.value    = "";
+    inputEl.style.height = "auto";
+    setStatus("loading");
+
+    addMsg(text, "user");
+    showTyping();
+
+    try {
+      const res = await fetch(API, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ message: text }),
+      });
+
+      const data = await res.json();
+      removeTyping();
+
+      if (res.status === 503) {
+        const secs = data.retry_after ?? 25;
+        addMsg(
+          `Model is warming up (~${secs} seconds). Please send your message again.`,
+          "error"
+        );
+      } else if (!res.ok || data.error) {
+        addMsg(data.error ?? "Something went wrong. Please try again.", "error");
+      } else {
+        addMsg(data.reply ?? "No response received.", "bot");
+      }
+
+    } catch (err) {
+      removeTyping();
+      addMsg("Network error. Check your connection and try again.", "error");
+    }
+
+    // Unlock UI
+    isLoading        = false;
+    sendBtn.disabled = false;
+    setStatus("online");
+    inputEl.focus();
+  }
+
+  // ── Init ───────────────────────────────────────────────────────
+  setStatus("online");
+  inputEl.focus();
+</script>
+
+</body>
+</html>
