@@ -20,17 +20,12 @@ export default async function handler(req, res) {
     });
   }
 
-  // Llama 3.2 instruction format
+  // Qwen instruction format
   const prompt =
-    `<|begin_of_text|>` +
-    `<|start_header_id|>system<|end_header_id|>\n` +
-    `You are SagjiBot, a vegetable expert assistant. ` +
-    `You know about vegetable nutrition, farming, agricultural chemicals, and plant diseases. ` +
-    `If the user writes in Nepali (नेपाली), reply entirely in Nepali. ` +
-    `If the user writes in English, reply in English. ` +
-    `Give accurate, practical, specific answers. Keep replies under 220 words.<|eot_id|>` +
-    `<|start_header_id|>user<|end_header_id|>\n${message.trim()}<|eot_id|>` +
-    `<|start_header_id|>assistant<|end_header_id|>\n`;
+    `<|im_start|>system\n` +
+    `You are SagjiBot, a vegetable expert. Reply in Nepali if asked in Nepali, English if asked in English.<|im_end|>\n` +
+    `<|im_start|>user\n${message.trim()}<|im_end|>\n` +
+    `<|im_start|>assistant\n`;
 
   try {
     const hfRes = await fetch(HF_MODEL_URL, {
