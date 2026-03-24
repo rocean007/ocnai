@@ -52,7 +52,7 @@ else:
 # ════════════════════════════════════════════════════
 # CELL 3 — Install packages
 # ════════════════════════════════════════════════════
-!pip install -q "transformers>=4.45" datasets "peft>=0.12" "trl>=0.11" \
+pip install -q "transformers>=4.45" datasets "peft>=0.12" "trl>=0.11" \
                "accelerate>=0.34" "bitsandbytes>=0.43" sentencepiece huggingface_hub
 print("✅ Packages installed")
 
