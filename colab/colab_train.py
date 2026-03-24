@@ -38,8 +38,38 @@ print(f"   HF    : huggingface.co/{HF_USERNAME}/{HF_REPO}")
 # This saves your model automatically — if Colab disconnects,
 # your progress is safe in Drive
 # ════════════════════════════════════════════════════════════════
+import os
+import shutil # Import shutil for rmtree
 from google.colab import drive
-drive.mount("/content/drive")
+
+# Define mount point
+mount_point = "/content/drive"
+
+# Try to unmount first, in case it was already mounted (e.g., from a previous run)
+try:
+    drive.flush_and_unmount()
+except ValueError:
+    pass # Drive might not be mounted initially, ignore error
+
+# Ensure the mount point directory is empty or non-existent before mounting
+# If the directory exists and contains files, drive.mount will fail.
+# So, remove it completely and then recreate it as an empty directory.
+if os.path.exists(mount_point):
+    if os.path.isdir(mount_point):
+        print(f"Removing existing directory {mount_point} to ensure a clean mount point.")
+        shutil.rmtree(mount_point)
+    else:
+        # If it exists but is not a directory (e.g., a file), remove it.
+        print(f"Removing existing non-directory item at {mount_point}.")
+        os.remove(mount_point)
+
+# Recreate the empty directory for mounting
+os.makedirs(mount_point, exist_ok=True)
+
+# Now attempt to mount Google Drive
+drive.mount(mount_point, force_remount=True)
+
+
 os.makedirs(f"{SAVE_DIR}/checkpoints", exist_ok=True)
 print("✅ Google Drive mounted")
 print(f"   Checkpoints will save to: {SAVE_DIR}/checkpoints")
